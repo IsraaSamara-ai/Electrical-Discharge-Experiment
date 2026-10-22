@@ -21,12 +21,30 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-HTML_FILE = Path(__file__).parent / "Lap_Atom_Structure_3d_ch-1.html"
+APP_DIR = Path(__file__).resolve().parent
+
+
+def find_html() -> Path | None:
+    """يبحث عن ملف المختبر: يفضّل الاسم الأصلي، وإلا يأخذ أي ملف HTML في المستودع."""
+    preferred = APP_DIR / "Lap_Atom_Structure_3d_ch-1.html"
+    if preferred.exists():
+        return preferred
+    candidates = sorted(APP_DIR.rglob("*.html"))
+    return candidates[0] if candidates else None
 
 
 @st.cache_data
-def load_lab() -> str:
-    return HTML_FILE.read_text(encoding="utf-8")
+def load_lab(path: str) -> str:
+    return Path(path).read_text(encoding="utf-8")
 
 
-components.html(load_lab(), height=1000, scrolling=True)
+html_path = find_html()
+
+if html_path is None:
+    st.error(
+        "لم يتم العثور على ملف المختبر (.html). "
+        "تأكدي من رفعه إلى نفس مجلد app.py في مستودع GitHub."
+    )
+    st.write("الملفات الموجودة حالياً:", [p.name for p in APP_DIR.iterdir()])
+else:
+    components.html(load_lab(str(html_path)), height=1000, scrolling=True)
