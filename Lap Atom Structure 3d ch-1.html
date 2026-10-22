@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مختبر الكيمياء الافتراضي - بنية الذرة</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#f0ebe0;--fg:#1a1a2e;--card:#ffffff;--card2:#f8f5ef;--accent:#b8860b;
+--accent2:#daa520;--muted:#7a7568;--border:#d4cfc5;--lab:#5c3d0e;--lab-light:#8b6914;
+--shadow:rgba(0,0,0,0.12);--success:#2d8a4e;--error:#c0392b;
+--ray:#00e676;--solution:#1a6b8a;--copper:#b87333;--gas-c:#7cb342;--wire:#444;
+}
+[data-theme="dark"]{
+--bg:#0d1117;--fg:#e6e1d8;--card:#161b22;--card2:#1c2333;--accent:#f0b429;
+--accent2:#ffd666;--muted:#8b949e;--border:#30363d;--lab:#3d2b0a;--lab-light:#5c4418;
+--shadow:rgba(0,0,0,0.5);--success:#3fb950;--error:#f85149;
+--ray:#00e676;--solution:#1a8aaa;--copper:#d4935a;--gas-c:#9ccc65;--wire:#888;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;transition:background .4s,color .4s;overflow-x:hidden;}
+h1,h2,h3{font-family:'Tajawal',sans-serif;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px;}
+
+.lab-header{background:linear-gradient(135deg,var(--lab),var(--lab-light));padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px var(--shadow);}
+.lab-header h1{color:#fff;font-size:1.15rem;font-weight:900;}
+.header-btns{display:flex;gap:6px;}
+.hdr-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:8px;cursor:pointer;font-family:'Cairo';font-size:.8rem;transition:all .3s;display:flex;align-items:center;gap:5px;}
+.hdr-btn:hover{background:rgba(255,255,255,0.28);}
+
+.tabs-bar{display:flex;gap:5px;padding:8px 16px;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.tab-btn{padding:7px 16px;border-radius:18px;border:2px solid var(--border);background:transparent;color:var(--fg);cursor:pointer;font-family:'Cairo';font-size:.78rem;font-weight:600;transition:all .3s;white-space:nowrap;}
+.tab-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tab-btn.active{background:var(--accent);color:#1a1a2e;border-color:var(--accent);font-weight:700;}
+
+.main-grid{display:grid;grid-template-columns:200px 1fr 250px;min-height:calc(100vh - 110px);position:relative;}
+@media(max-width:960px){.main-grid{grid-template-columns:1fr;}.tools-shelf,.notes-panel{max-height:150px;border:none!important;border-bottom:1px solid var(--border)!important;}.tools-shelf{display:flex;overflow-x:auto;gap:6px;padding:8px!important;}.tool-item{min-width:90px;margin-bottom:0!important;flex-shrink:0;}}
+
+.tools-shelf{background:var(--card);border-left:1px solid var(--border);padding:12px;overflow-y:auto;max-height:calc(100vh - 110px);}
+.shelf-title{font-size:.75rem;font-weight:700;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+
+.tool-item{background:var(--card2);border:2px solid var(--border);border-radius:12px;padding:10px 6px 8px;text-align:center;cursor:grab;margin-bottom:7px;transition:all .3s;user-select:none;position:relative;overflow:hidden;}
+.tool-item::before{content:'';position:absolute;top:0;left:0;right:0;height:40%;background:linear-gradient(180deg,rgba(255,255,255,0.15),transparent);pointer-events:none;border-radius:10px 10px 0 0;}
+.tool-item:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 16px var(--shadow);}
+.tool-item:active{cursor:grabbing;transform:scale(1.04);}
+.tool-item.used{opacity:.3;pointer-events:none;border-style:dashed;}
+.tool-icon-3d{width:52px;height:52px;margin:0 auto 4px;position:relative;transform-style:preserve-3d;transform:perspective(400px) rotateX(8deg) rotateY(-5deg);}
+.tool-name{font-size:.65rem;font-weight:600;color:var(--muted);line-height:1.3;}
+
+.workspace{background:var(--bg);display:flex;flex-direction:column;position:relative;}
+.bench{flex:1;position:relative;overflow:hidden;min-height:420px;background:linear-gradient(180deg,var(--bg) 0%,var(--card2) 80%,rgba(107,79,29,0.06) 100%);}
+.bench::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,transparent,rgba(107,79,29,0.15),transparent);}
+
+#wiresSvg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:6;pointer-events:none;}
+.wire-path{stroke:var(--wire);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));}
+.wire-anim{stroke-dasharray:600;stroke-dashoffset:600;animation:drawWire .8s ease forwards;}
+@keyframes drawWire{to{stroke-dashoffset:0;}}
+.wire-dot{fill:var(--wire);filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));}
+
+#fxCanvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:8;pointer-events:none;}
+#placedLayer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none;}
+.placed-comp{position:absolute;pointer-events:none;transition:opacity .5s,transform .5s;}
+.placed-comp.clickable{pointer-events:auto;cursor:pointer;}
+
+.instr-bar{background:var(--card);border-top:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;min-height:56px;}
+.step-num{background:var(--accent);color:#1a1a2e;font-weight:900;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;flex-shrink:0;}
+.instr-text{font-size:.85rem;font-weight:600;line-height:1.5;flex:1;}
+.next-btn{background:var(--accent);color:#1a1a2e;border:none;padding:7px 18px;border-radius:10px;cursor:pointer;font-family:'Cairo';font-weight:700;font-size:.82rem;transition:all .3s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.next-btn:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(184,134,11,0.3);}
+.next-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
+
+.notes-panel{background:var(--card);border-right:1px solid var(--border);padding:12px;display:flex;flex-direction:column;max-height:calc(100vh - 110px);overflow-y:auto;}
+.notes-title{font-size:.75rem;font-weight:700;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.notes-ta{flex:1;min-height:80px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px;font-family:'Cairo';font-size:.78rem;color:var(--fg);resize:none;outline:none;transition:border-color .3s;}
+.notes-ta:focus{border-color:var(--accent);}
+.notes-ta::placeholder{color:var(--muted);}
+
+.analysis-section{margin-top:10px;}
+.analysis-q{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;}
+.analysis-q-text{font-size:.78rem;font-weight:600;margin-bottom:6px;line-height:1.5;}
+.analysis-a{max-height:0;overflow:hidden;transition:max-height .4s ease;font-size:.75rem;line-height:1.7;color:var(--muted);}
+.analysis-a.open{max-height:500px;}
+.analysis-a-inner{padding-top:6px;border-top:1px dashed var(--border);margin-top:4px;}
+.show-a-btn{background:transparent;border:1px solid var(--accent);color:var(--accent);padding:3px 10px;border-radius:6px;cursor:pointer;font-family:'Cairo';font-size:.7rem;font-weight:600;transition:all .3s;}
+.show-a-btn:hover{background:var(--accent);color:#1a1a2e;}
+
+.assess-area{display:none;overflow-y:auto;padding:24px;background:var(--bg);}
+.assess-area.active{display:block;}
+.assess-title{font-size:1.1rem;font-weight:900;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.q-card{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;transition:all .4s;}
+.q-card.correct{border-color:var(--success);}
+.q-card.wrong{border-color:var(--error);}
+.q-text{font-size:.88rem;font-weight:600;margin-bottom:10px;line-height:1.7;}
+.q-opts{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.q-opt{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.83rem;transition:all .2s;}
+.q-opt:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,transparent);}
+.q-opt.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600;}
+.q-opt input{accent-color:var(--accent);}
+.q-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.q-btn{padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-family:'Cairo';font-size:.78rem;font-weight:600;transition:all .3s;}
+.q-btn.ck{background:var(--accent);color:#1a1a2e;}.q-btn.ck:hover{background:var(--accent2);}
+.q-btn.sh{background:var(--border);color:var(--fg);}.q-btn.sh:hover{opacity:.85;}
+.q-fb{margin-top:10px;padding:10px;border-radius:8px;font-size:.8rem;line-height:1.7;display:none;}
+.q-fb.show{display:block;}
+.q-fb.ok{background:color-mix(in srgb,var(--success) 10%,transparent);color:var(--success);border:1px solid color-mix(in srgb,var(--success) 25%,transparent);}
+.q-fb.no{background:color-mix(in srgb,var(--error) 10%,transparent);color:var(--error);border:1px solid color-mix(in srgb,var(--error) 25%,transparent);}
+
+.narrator{position:fixed;bottom:16px;right:16px;z-index:200;background:var(--card);border:2px solid var(--accent);border-radius:14px;padding:8px 14px;max-width:300px;box-shadow:0 8px 30px var(--shadow);display:none;align-items:center;gap:8px;}
+.narrator.on{display:flex;}
+.nar-ava{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#1a1a2e;font-size:.8rem;flex-shrink:0;}
+.nar-txt{font-size:.75rem;line-height:1.5;flex:1;max-height:50px;overflow-y:auto;}
+.nar-wav{display:flex;gap:2px;align-items:center;height:18px;}
+.nar-wav span{width:3px;background:var(--accent);border-radius:2px;animation:wv 1s ease-in-out infinite;}
+.nar-wav span:nth-child(1){height:7px;animation-delay:0s;}.nar-wav span:nth-child(2){height:13px;animation-delay:.12s;}.nar-wav span:nth-child(3){height:9px;animation-delay:.24s;}.nar-wav span:nth-child(4){height:15px;animation-delay:.36s;}
+@keyframes wv{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.35);}}
+
+.ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.85;transform:scale(1.08) rotate(-2deg);filter:drop-shadow(0 8px 20px rgba(0,0,0,0.25));}
+
+.drop-hint{position:absolute;border:2px dashed var(--border);border-radius:14px;display:flex;align-items:center;justify-content:center;transition:all .3s;opacity:.5;z-index:4;}
+.drop-hint.hl{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);opacity:1;box-shadow:0 0 25px color-mix(in srgb,var(--accent) 15%,transparent);}
+
+@keyframes bubbleUp{0%{transform:translateY(0) scale(1);opacity:.7;}100%{transform:translateY(-90px) scale(.2);opacity:0;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{animation:fadeUp .5s ease both;}
+.slide-up{animation:slideUp .5s ease both;}
+
+.bubble{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.5),rgba(124,179,66,0.25));border:1px solid rgba(124,179,66,0.3);z-index:11;pointer-events:none;animation:bubbleUp 2s ease-out both;}
+
+.lab-footer{text-align:center;padding:8px;background:var(--card);border-top:1px solid var(--border);font-size:.72rem;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header class="lab-header">
+  <h1><i class="fas fa-flask" style="margin-left:6px;"></i>مختبر الكيمياء الافتراضي - بنية الذرة</h1>
+  <div class="header-btns">
+    <button class="hdr-btn" onclick="toggleSound()" id="sndBtn"><i class="fas fa-volume-up" id="sndIco"></i></button>
+    <button class="hdr-btn" onclick="toggleTheme()" id="thmBtn"><i class="fas fa-moon" id="thmIco"></i></button>
+  </div>
+</header>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="switchTab(0)" id="tab0"><i class="fas fa-bolt" style="margin-left:4px;"></i>التفريغ الكهربائي</button>
+  <button class="tab-btn" onclick="switchTab(1)" id="tab1"><i class="fas fa-vial" style="margin-left:4px;"></i>التحليل الكهربائي</button>
+  <button class="tab-btn" onclick="switchTab(2)" id="tab2"><i class="fas fa-clipboard-check" style="margin-left:4px;"></i>التقييم التفاعلي</button>
+</div>
+
+<div class="main-grid" id="mainGrid">
+  <aside class="tools-shelf" id="toolsShelf">
+    <div class="shelf-title"><i class="fas fa-toolbox"></i> الأدوات والمواد</div>
+    <div id="toolsBox"></div>
+  </aside>
+
+  <section class="workspace" id="wsArea">
+    <div class="bench" id="bench">
+      <svg id="wiresSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <canvas id="fxCanvas"></canvas>
+      <div id="placedLayer"></div>
+      <div id="dropHints"></div>
+    </div>
+    <div class="instr-bar" id="instrBar">
+      <div class="step-num" id="stepNum">1</div>
+      <div class="instr-text" id="instrTxt">اختر التجربة للبدء</div>
+      <button class="next-btn" id="nextBtn" onclick="nextStep()" disabled>الخطوة التالية <i class="fas fa-arrow-left"></i></button>
+    </div>
+  </section>
+
+  <aside class="notes-panel" id="notesPanel">
+    <div class="notes-title"><i class="fas fa-pen-fancy"></i> دفتر الملاحظات</div>
+    <textarea class="notes-ta" id="notesTa" placeholder="سجّل ملاحظاتك واستنتاجاتك هنا..."></textarea>
+    <div class="analysis-section" id="analysisSection"></div>
+  </aside>
+
+  <div class="assess-area" id="assessArea"></div>
+</div>
+
+<div class="narrator" id="narrator">
+  <div class="nar-ava"><i class="fas fa-chalkboard-teacher"></i></div>
+  <div class="nar-txt" id="narTxt"></div>
+  <div class="nar-wav"><span></span><span></span><span></span><span></span></div>
+</div>
+
+<footer class="lab-footer">إعداد: اسراء يوسف سمارة &nbsp;|&nbsp; الصف التاسع &nbsp;|&nbsp; الوحدة الأولى: بنية الذرة</footer>
+
+<script>
+/* ===== الحالة العامة ===== */
+const S={exp:0,tab:0,step:0,snd:true,dark:false,placed:{0:[],1:[]},fx:{ray:false,defl:false,cylFill:false,bkFill:false,elec:false},notes:{'0':'','1':''},ans:{}};
+
+/* ===== بيانات التجارب ===== */
+const EXPS=[
+{name:'التفريغ الكهربائي',
+tools:[
+{id:'tube',name:'أنبوب التفريغ الكهربائي',color:'#4a90d9'},
+{id:'coil',name:'ملف رومكورف',color:'#8b6914'},
+{id:'wire1',name:'سلك توصيل (1)',color:'#555'},
+{id:'wire2',name:'سلك توصيل (2)',color:'#555'},
+{id:'magnet',name:'مغناطيس',color:'#c0392b'}
+],
+steps:[
+{tool:'tube',hint:'ضع أنبوب التفريغ هنا',dz:{l:'8%',t:'18%',w:'84%',h:'28%'},nar:'هذا أنبوب التفريغ الكهربائي، أنبوب زجاجي يحتوي على غاز تحت ضغط منخفض جداً، وعليه قطبان: المصعد والمهبط.'},
+{tool:'coil',hint:'ضع ملف رومكورف هنا',dz:{l:'30%',t:'58%',w:'40%',h:'22%'},nar:'ملف رومكورف يُنتج جهداً كهربائياً عالياً جداً. تعامل معه بحذر شديد.'},
+{tool:'wire1',hint:'وصّل السلك من الطرف الأيسر للملف إلى المهبط',dz:{l:'18%',t:'38%',w:'20%',h:'20%'},nar:'نصل السلك الأول من الطرف الأيسر لملف رومكورف إلى المهبط في أنبوب التفريغ.'},
+{tool:'wire2',hint:'وصّل السلك من الطرف الأيمن للملف إلى المصعد',dz:{l:'62%',t:'38%',w:'20%',h:'20%'},fx:'startRay',nar:'نصل السلك الثاني لإغلاق الدارة الكهربائية. لاحظ ما يحدث داخل الأنبوب!'},
+{tool:'magnet',hint:'قرّب المغناطيس من الأنبوب',dz:{l:'60%',t:'2%',w:'30%',h:'16%'},fx:'deflectRay',nar:'لاحظ انحراف الأشعة المهبطية بعيداً عن القطب السالب للمغناطيس. ماذا يدل ذلك؟'},
+{tool:null,hint:'',nar:'الأشعة المهبطية هي إلكترونات: جسيمات سالبة الشحنة موجودة في جميع الذرات. أدوّن ملاحظاتي.',fx:'showAtom'}
+]},
+{name:'التحليل الكهربائي لمحلول كلوريد النحاس',
+tools:[
+{id:'cylinder',name:'مخبار مدرج',color:'#1a6b8a'},
+{id:'solution',name:'محلول كلوريد النحاس',color:'#1a6b8a'},
+{id:'beaker',name:'كأس زجاجية',color:'rgba(180,200,220,0.5)'},
+{id:'elec1',name:'قطب كربون (مهبط -)',color:'#333'},
+{id:'elec2',name:'قطب كربون (مصعد +)',color:'#333'},
+{id:'battery',name:'بطارية 6 فولت',color:'#2d8a4e'}
+],
+steps:[
+{tool:'cylinder',hint:'ضع المخبار المدرج هنا',dz:{l:'72%',t:'10%',w:'14%',h:'55%'},nar:'نستخدم المخبار المدرج لقياس محلول كلوريد النحاس.'},
+{tool:'solution',hint:'اسكب المحلول في المخبار',dz:{l:'72%',t:'66%',w:'14%',h:'18%'},fx:'fillCyl',nar:'نسكب محلول كلوريد النحاس ذي اللون الأزرق المخضر في المخبار المدرج.'},
+{tool:'beaker',hint:'ضع الكأس الزجاجية هنا',dz:{l:'28%',t:'28%',w:'38%',h:'48%'},nar:'نضع الكأس الزجاجية في منطقة العمل.'},
+{tool:null,hint:'اضغط على المخبار لسكب المحلول في الكأس',click:'cylinder',fx:'pourSol',nar:''},
+{tool:'elec1',hint:'ضع قطب المهبط في الكأس',dz:{l:'34%',t:'22%',w:'6%',h:'50%'},nar:'نضع قطب الكربون المتصل بالقطب السالب للبطارية (المهبط) في المحلول.'},
+{tool:'elec2',hint:'ضع قطب المصعد في الكأس',dz:{l:'55%',t:'22%',w:'6%',h:'50%'},nar:'نضع قطب الكربون المتصل بالقطب الموجب للبطارية (المصعد) في المحلول.'},
+{tool:'battery',hint:'صل البطارية بالأقطاب',dz:{l:'4%',t:'26%',w:'18%',h:'32%'},fx:'startElec',nar:'نوصل البطارية لإتمام الدارة الكهربائية. لاحظ التغيرات عند كل قطب!'},
+{tool:null,hint:'',fx:'showElecModel',nar:'عند المهبط: ترسيب نحاس فلزي بني محمر. عند المصعد: غاز كلور أخضر. هذا يثبت وجود إلكترونات في الذرة!'}
+]}
+];
+
+/* ===== التحليل والاستنتاج ===== */
+const ANALYSIS=[
+[
+{q:'1. فسّر ظهور حزمة من الأشعة بين القطبين عند تمرير التيار الكهربائي في أنبوب التفريغ.',
+a:'عند تطبيق جهد كهربائي عالٍ على أنبوب يحتوي غازاً تحت ضغط منخفض جداً، تنطلق إلكترونات من المهبط بسرعة عالية جداً نحو المصعد، وتصطدم بجزيئات الغاز المتبقية فتثيرها وتجعلها تتوهج، مكونة حزمة الأشعة المهبطية.'},
+{q:'2. أوضح أثر المجال المغناطيسي في مسار الأشعة.',
+a:'عند تقريب المغناطيس، تنحرف الأشعة المهبطية بعيداً عن القطب السالب (N) وتتجه نحو القطب الموجب (S)، مما يدل على أنها تحمل شحنة سالبة، لأن الشحنات السالبة تنفر من القطب السالب وتنجذب للموجب.'},
+{q:'3. استنتج بعض خصائص الأشعة التي تظهر في أنبوب التفريغ.',
+a:'- جسيمات متناهية الصغر (ليست ضوءاً عادياً)<br>- تحمل شحنة سالبة (تتأثر بالمجال المغناطيسي والكهربائي)<br>- تتحرك بسرعة عالية جداً<br>- تنطلق من المهبط (القطب السالب)<br>- لا تتغير خصائصها بتغيير نوع الغاز أو مادة المهبط<br>- أُطلق عليها لاحقاً اسم "الإلكترونات"'}
+],
+[
+{q:'1. صف ما يحدث عند قطب الكربون المتصل بالقطب السالب للبطارية.',
+a:'تُختزل أيونات النحاس الثنائية Cu²⁺ عند المهبط باكتساب إلكترونين من الدارة الخارجية، وتتحول إلى ذرات نحاس فلزية تترسب على سطح القطب بلون بني محمر.<br><b>المعادلة:</b> Cu²⁺ + 2e⁻ → Cu'},
+{q:'2. صف ما يحدث عند قطب الكربون المتصل بالقطب الموجب للبطارية.',
+a:'تتأكسد أيونات الكلوريد Cl⁻ عند المصعد بفقدان إلكترون، وتتحول إلى غاز الكلور Cl₂ الذي يتميز بلونه الأخضر الداكن ورائحته المزعجة.<br><b>المعادلة:</b> 2Cl⁻ → Cl₂ + 2e⁻'},
+{q:'3. فسّر دور الإلكترونات في حدوث التغيّرات عند كلٍّ من القطبين.',
+a:'الإلكترونات تنتقل من المصعد إلى المهبط عبر السلك الخارجي. عند المهبط: تكتسبها أيونات Cu²⁺ فتُختزل إلى نحاس فلزي. عند المصعد: تفقد أيونات Cl⁻ إلكترونات فتتأكسد إلى غاز Cl₂. هذا يثبت أن الذرة تحتوي على جسيمات مشحونة سالبة هي الإلكترونات.'}
+]
+];
+
+/* ===== أسئلة التقييم ===== */
+const QUESTIONS=[
+[
+{t:'فسّر ظهور حزمة من الأشعة بين القطبين عند تمرير التيار الكهربائي في أنبوب التفريغ.',
+o:['بسبب تصادم الغاز المتبقي مع الإلكترونات المنطلقة من المهبط بسرعة عالية','بسبب ارتفاع درجة حرارة الغاز داخل الأنبوب','بسبب تفاعل كيميائي بين قطبي الأنبوب','بسبب تأثير المجال المغناطيسي الأرضي'],c:0,
+e:'عند تمرير تيار عالي الجهد، تنطلق إلكترونات من المهبط بسرعة عالية وتصطدم بجزيئات الغاز المتبقي تحت الضغط المنخفض فتتوهج مكونة الأشعة المهبطية.'},
+{t:'ماذا يستنتج من انحراف الأشعة المهبطية عند تقريب مغناطيس؟',
+o:['الأشعة عبارة عن ضوء عادي','الأشعة لا تتأثر بالمجال المغناطيسي','الأشعة تحمل شحنة كهربائية سالبة','الأشعة تحمل شحنة كهربائية موجبة'],c:2,
+e:'انحراف الأشعة بتأثير المجال المغناطيسي يدل على أنها جسيمات مشحونة سالبة (إلكترونات) تنفر من القطب السالب وتنجذب للموجب.'},
+{t:'لماذا لا تتغير خصائص الأشعة المهبطية بتغيير نوع الغاز داخل الأنبوب؟',
+o:['لأن الغاز لا يتفاعل مع التيار','لأن مصدر الأشعة هو الإلكترونات الموجودة في ذرات جميع العناصر','لأن جميع الغازات متشابهة','لأن الضغط المنخفض يلغي تأثير نوع الغاز'],c:1,
+e:'ثبات خصائص الأشعة رغم تغيير الغاز أو مادة المهبط يدل أن الإلكترونات موجودة في ذرات جميع العناصر وهي جزء أساسي من بنية الذرة.'}
+],
+[
+{t:'ماذا يحدث عند قطب الكربون المتصل بالقطب السالب للبطارية (المهبط)؟',
+o:['يتصاعد غاز الكلور','يترسب نحاس فلزي بلون بني محمر','يتكون محلول أزرق','لا يحدث أي تغيير'],c:1,
+e:'تُختزل أيونات Cu²⁺ باكتساب إلكترونين وتتحول إلى ذرات نحاس فلزية تترسب بلون بني محمر: Cu²⁺ + 2e⁻ → Cu'},
+{t:'ماذا يحدث عند قطب الكربون المتصل بالقطب الموجب للبطارية (المصعد)؟',
+o:['يترسب نحاس فلزي','يتصاعد غاز الأكسجين','يتصاعد غاز الكلور ذو الرائحة المزعجة','يتكون ملح أبيض'],c:2,
+e:'تتأكسد أيونات Cl⁻ بفقدان إلكترون وتتحول إلى غاز Cl₂ الأخضر ذي الرائحة المزعجة: 2Cl⁻ → Cl₂ + 2e⁻'},
+{t:'فسّر دور الإلكترونات في حدوث التغيّرات عند كلٍّ من القطبين.',
+o:['الإلكترونات تنتقل من المصعد إلى المهبط فتُختزل أيونات النحاس وتتأكسد أيونات الكلوريد','الإلكترونات لا تلعب أي دور','الإلكترونات تتحرك من المهبط إلى المصعد مباشرة','الإلكترونات تتفاعل مع الماء لتكوين غاز الهيدروجين'],c:0,
+e:'الإلكترونات تنتقل من المصعد (حيث تفقد Cl⁻ إلكتروناتها) عبر السلك الخارجي إلى المهبط (حيث تكتسب Cu²⁺ هذه الإلكترونات). هذا التدفق هو أساس التحليل الكهربائي.'}
+]
+];
+
+/* ===== الصوت ===== */
+let actx=null;
+function ac(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+function snd(type){
+if(!S.snd)return;
+try{const c=ac(),n=c.currentTime;
+switch(type){
+case'click':{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=800;o.type='sine';g.gain.setValueAtTime(.12,n);g.gain.exponentialRampToValueAtTime(.001,n+.08);o.start(n);o.stop(n+.08);break;}
+case'place':{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=420;o.type='triangle';o.frequency.exponentialRampToValueAtTime(620,n+.12);g.gain.setValueAtTime(.18,n);g.gain.exponentialRampToValueAtTime(.001,n+.18);o.start(n);o.stop(n+.18);break;}
+case'pour':{const b=c.createBuffer(1,c.sampleRate*1.5,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*.25*Math.sin(Math.PI*i/d.length);const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=b;f.type='bandpass';f.frequency.value=2500;f.Q.value=.8;s.connect(f);f.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.2,n);g.gain.exponentialRampToValueAtTime(.001,n+1.5);s.start(n);break;}
+case'buzz':{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=110;o.type='sawtooth';g.gain.setValueAtTime(.06,n);g.gain.exponentialRampToValueAtTime(.001,n+.35);o.start(n);o.stop(n+.35);break;}
+case'correct':{[523,659,784].forEach((fr,i)=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=fr;o.type='sine';g.gain.setValueAtTime(.12,n+i*.11);g.gain.exponentialRampToValueAtTime(.001,n+i*.11+.25);o.start(n+i*.11);o.stop(n+i*.11+.25);});break;}
+case'wrong':{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=180;o.type='square';o.frequency.exponentialRampToValueAtTime(90,n+.25);g.gain.setValueAtTime(.1,n);g.gain.exponentialRampToValueAtTime(.001,n+.3);o.start(n);o.stop(n+.3);break;}
+case'bubble':{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=280+Math.random()*350;o.type='sine';g.gain.setValueAtTime(.04,n);g.gain.exponentialRampToValueAtTime(.001,n+.12);o.start(n);o.stop(n+.12);break;}
+case'complete':{[523,659,784,1047].forEach((fr,i)=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=fr;o.type='sine';g.gain.setValueAtTime(.1,n+i*.14);g.gain.exponentialRampToValueAtTime(.001,n+i*.14+.35);o.start(n+i*.14);o.stop(n+i*.14+.35);});break;}
+}}catch(e){}
+}
+function toggleSound(){S.snd=!S.snd;document.getElementById('sndIco').className=S.snd?'fas fa-volume-up':'fas fa-volume-mute';if(S.snd)snd('click');}
+
+/* ===== صوت المعلم ===== */
+function speak(txt){
+if(!S.snd)return;
+speechSynthesis.cancel();
+const bar=document.getElementById('narrator'),tx=document.getElementById('narTxt');
+tx.textContent=txt;bar.classList.add('on');
+const u=new SpeechSynthesisUtterance(txt);u.lang='ar-SA';u.rate=.88;u.pitch=1;
+u.onend=()=>bar.classList.remove('on');u.onerror=()=>bar.classList.remove('on');
+speechSynthesis.speak(u);
+}
+
+/* ===== السمة ===== */
+function toggleTheme(){
+S.dark=!S.dark;document.documentElement.setAttribute('data-theme',S.dark?'dark':'light');
+document.getElementById('thmIco').className=S.dark?'fas fa-sun':'fas fa-moon';snd('click');drawFx();
+}
+
+/* ===== التبويبات ===== */
+function switchTab(idx){
+speechSynthesis.cancel();document.getElementById('narrator').classList.remove('on');
+S.tab=idx;
+document.querySelectorAll('.tabs-bar .tab-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+const showExp=idx<2;
+document.getElementById('toolsShelf').style.display=showExp?'':'none';
+document.getElementById('wsArea').style.display=showExp?'':'none';
+document.getElementById('notesPanel').style.display=showExp?'':'none';
+const aa=document.getElementById('assessArea');
+if(idx===2){
+  aa.style.display='block';aa.style.position='absolute';
+  aa.style.top='0';aa.style.left='0';aa.style.right='0';aa.style.bottom='0';
+  aa.style.zIndex='50';aa.style.background='var(--bg)';
+  buildAssessment();
+}else{aa.style.display='none';aa.style.position='';}
+if(idx<2){
+  if(idx!==S.exp){S.exp=idx;S.step=0;S.fx={ray:false,defl:false,cylFill:false,bkFill:false,elec:false};}
+  buildTools();clearPlaced();updateStep();drawWires();drawFx();
+  document.getElementById('notesTa').value=S.notes[S.exp]||'';
+  buildAnalysis();
+}
+snd('click');
+}
+
+/* ===== بناء الأدوات ===== */
+function buildTools(){
+const box=document.getElementById('toolsBox');box.innerHTML='';
+EXPS[S.exp].tools.forEach(t=>{
+  const d=document.createElement('div');d.className='tool-item';d.id='tool-'+t.id;d.dataset.tool=t.id;
+  d.innerHTML=`<div class="tool-icon-3d">${tool3D(t.id)}</div><div class="tool-name">${t.name}</div>`;
+  d.addEventListener('mousedown',startDrag);d.addEventListener('touchstart',startDragT,{passive:false});
+  box.appendChild(d);
+});
+}
+
+function tool3D(id){
+switch(id){
+case'tube':return `<div style="width:48px;height:20px;background:linear-gradient(180deg,rgba(150,200,255,0.25),rgba(150,200,255,0.08),rgba(150,200,255,0.2));border:1.5px solid rgba(120,170,220,0.5);border-radius:10px;position:relative;box-shadow:inset 0 1px 3px rgba(255,255,255,0.3),0 2px 6px rgba(0,0,0,0.15);"><div style="position:absolute;right:-3px;top:25%;width:5px;height:50%;background:linear-gradient(180deg,#999,#666);border-radius:1px;"></div><div style="position:absolute;left:-3px;top:25%;width:5px;height:50%;background:linear-gradient(180deg,#999,#666);border-radius:1px;"></div></div><div style="width:48px;height:6px;background:linear-gradient(180deg,#8b7355,#6b5335);border-radius:2px;margin-top:2px;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>`;
+case'coil':return `<div style="width:28px;height:42px;background:linear-gradient(90deg,#3a2a08,#6b4f1d,#8b6914,#6b4f1d,#3a2a08);border-radius:6px;position:relative;box-shadow:2px 3px 8px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.15);"><div style="position:absolute;top:4px;left:3px;right:3px;bottom:4px;background:repeating-linear-gradient(180deg,transparent,transparent 3px,rgba(200,160,60,0.3) 3px,rgba(200,160,60,0.3) 4px);border-radius:4px;"></div><div style="position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;background:radial-gradient(circle,#ddd,#888);border-radius:50%;"></div><div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;background:radial-gradient(circle,#ddd,#888);border-radius:50%;"></div></div>`;
+case'wire1':case'wire2':return `<div style="width:40px;height:4px;background:linear-gradient(90deg,#666,#999,#666);border-radius:2px;box-shadow:0 2px 4px rgba(0,0,0,0.2);transform:rotate(-20deg);margin-top:20px;"></div><div style="width:8px;height:8px;background:radial-gradient(circle,#aaa,#555);border-radius:50%;margin-top:-4px;margin-right:-2px;"></div>`;
+case'magnet':return `<div style="width:36px;height:28px;display:flex;border-radius:4px;overflow:hidden;box-shadow:2px 3px 8px rgba(0,0,0,0.25);"><div style="flex:1;background:linear-gradient(135deg,#e53935,#c62828);display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:900;">N</div><div style="flex:.8;background:linear-gradient(180deg,#999,#777);"></div><div style="flex:1;background:linear-gradient(135deg,#1565c0,#0d47a1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:900;">S</div></div>`;
+case'cylinder':return `<div style="width:18px;height:44px;background:linear-gradient(90deg,rgba(180,210,240,0.2),rgba(220,235,250,0.4),rgba(180,210,240,0.2));border:1.5px solid rgba(150,180,210,0.5);border-radius:3px 3px 6px 6px;position:relative;box-shadow:inset 0 2px 4px rgba(255,255,255,0.3),0 2px 6px rgba(0,0,0,0.1);overflow:hidden;"><div style="position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(180deg,rgba(26,107,138,0.4),rgba(26,107,138,0.6));"></div><div style="position:absolute;top:5px;right:1px;font-size:5px;color:var(--muted);writing-mode:vertical-rl;">mL</div></div>`;
+case'solution':return `<div style="width:22px;height:36px;background:linear-gradient(180deg,rgba(26,107,138,0.5),rgba(26,107,138,0.7));border:1.5px solid rgba(26,107,138,0.6);border-radius:4px 4px 6px 6px;position:relative;box-shadow:inset 0 -8px 12px rgba(0,0,0,0.15),0 2px 6px rgba(0,0,0,0.15);"><div style="position:absolute;top:-4px;left:2px;right:2px;height:6px;background:linear-gradient(180deg,#555,#333);border-radius:3px 3px 0 0;"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:6px;color:#fff;font-weight:700;">CuCl₂</div></div>`;
+case'beaker':return `<div style="width:36px;height:36px;background:linear-gradient(90deg,rgba(200,220,240,0.15),rgba(220,235,250,0.08),rgba(200,220,240,0.15));border:1.5px solid rgba(150,180,210,0.4);border-radius:2px 2px 8px 8px;position:relative;box-shadow:inset 0 2px 4px rgba(255,255,255,0.2),0 3px 8px rgba(0,0,0,0.1);overflow:hidden;"><div style="position:absolute;bottom:0;left:0;right:0;height:55%;background:linear-gradient(180deg,rgba(26,107,138,0.3),rgba(26,107,138,0.5));"></div></div>`;
+case'elec1':case'elec2':return `<div style="width:10px;height:40px;background:linear-gradient(90deg,#555,#333,#222,#333,#555);border-radius:2px 2px 3px 3px;box-shadow:1px 2px 6px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.1);"></div>`;
+case'battery':return `<div style="width:34px;height:24px;background:linear-gradient(135deg,#2d8a4e,#1a6b3a);border-radius:5px;position:relative;box-shadow:2px 3px 8px rgba(0,0,0,0.25),inset 0 1px 0 rgba(255,255,255,0.15);"><div style="position:absolute;top:-4px;left:6px;width:8px;height:4px;background:linear-gradient(180deg,#ddd,#999);border-radius:2px 2px 0 0;"></div><div style="position:absolute;top:-6px;right:6px;width:12px;height:6px;background:linear-gradient(180deg,#ddd,#999);border-radius:2px 2px 0 0;"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:7px;color:#fff;font-weight:900;">6V</div></div>`;
+default:return '';
+}}
+
+/* ===== بناء قسم التحليل ===== */
+function buildAnalysis(){
+const as=document.getElementById('analysisSection');as.innerHTML='';
+const items=ANALYSIS[S.exp];
+let h='<div class="notes-title" style="margin-top:10px;"><i class="fas fa-brain"></i> التحليل والاستنتاج</div>';
+items.forEach((a,i)=>{
+h+=`<div class="analysis-q slide-up" style="animation-delay:${i*.1}s">
+<div class="analysis-q-text">${a.q}</div>
+<button class="show-a-btn" onclick="toggleAA(this)"><i class="fas fa-eye"></i> أظهر الإجابة</button>
+<div class="analysis-a" id="aa-${S.exp}-${i}"><div class="analysis-a-inner">${a.a}</div></div>
+</div>`;});
+as.innerHTML=h;
+}
+function toggleAA(btn){
+const a=btn.nextElementSibling;a.classList.toggle('open');
+btn.innerHTML=a.classList.contains('open')?'<i class="fas fa-eye-slash"></i> إخفاء الإجابة':'<i class="fas fa-eye"></i> أظهر الإجابة';
+snd('click');
+}
+
+/* ===== السحب والإفلات ===== */
+let drag=null,ghost=null;
+function startDrag(e){
+const el=e.currentTarget;if(el.classList.contains('used'))return;
+const tid=el.dataset.tool,step=EXPS[S.exp].steps[S.step];
+if(!step||step.tool!==tid)return;
+e.preventDefault();snd('click');
+drag={tid,el};ghost=el.cloneNode(true);ghost.className='ghost';ghost.style.width=el.offsetWidth+'px';
+document.body.appendChild(ghost);mvGhost(e.clientX,e.clientY);
+document.addEventListener('mousemove',onDrag);document.addEventListener('mouseup',endDrag);
+}
+function startDragT(e){
+const el=e.currentTarget;if(el.classList.contains('used'))return;
+const tid=el.dataset.tool,step=EXPS[S.exp].steps[S.step];
+if(!step||step.tool!==tid)return;
+e.preventDefault();snd('click');
+drag={tid,el};ghost=el.cloneNode(true);ghost.className='ghost';ghost.style.width=el.offsetWidth+'px';
+document.body.appendChild(ghost);const t=e.touches[0];mvGhost(t.clientX,t.clientY);
+document.addEventListener('touchmove',onDragT,{passive:false});document.addEventListener('touchend',endDragT);
+}
+function mvGhost(x,y){if(ghost){ghost.style.left=(x-40)+'px';ghost.style.top=(y-40)+'px';}}
+function onDrag(e){mvGhost(e.clientX,e.clientY);hlDrop(e.clientX,e.clientY);}
+function onDragT(e){e.preventDefault();const t=e.touches[0];mvGhost(t.clientX,t.clientY);hlDrop(t.clientX,t.clientY);}
+function hlDrop(x,y){const dz=document.getElementById('activeDrop');if(!dz)return;const r=dz.getBoundingClientRect();dz.classList.toggle('hl',x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom);}
+function endDrag(e){document.removeEventListener('mousemove',onDrag);document.removeEventListener('mouseup',endDrag);finishDrag(e.clientX,e.clientY);}
+function endDragT(e){document.removeEventListener('touchmove',onDragT);document.removeEventListener('touchend',endDragT);const t=e.changedTouches[0];finishDrag(t.clientX,t.clientY);}
+function finishDrag(x,y){
+if(ghost){ghost.remove();ghost=null;}
+const dz=document.getElementById('activeDrop');if(dz)dz.classList.remove('hl');
+if(!drag)return;
+const step=EXPS[S.exp].steps[S.step];
+let ok=false;
+if(dz){const r=dz.getBoundingClientRect();ok=x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;}
+if(ok&&step.tool===drag.tid)placeTool(drag.tid,step);else snd('buzz');
+drag=null;
+}
+
+/* ===== وضع الأدوات ===== */
+function placeTool(tid,step){
+snd('place');S.placed[S.exp].push(tid);
+const layer=document.getElementById('placedLayer');
+const el=document.createElement('div');el.className='placed-comp fade-up';el.id='p-'+tid;
+el.style.cssText=`left:${step.dz.l};top:${step.dz.t};width:${step.dz.w};height:${step.dz.h};display:flex;align-items:center;justify-content:center;`;
+el.innerHTML=renderComp(tid,step.dz);
+layer.appendChild(el);
+document.getElementById('tool-'+tid).classList.add('used');
+drawWires();
+if(step.fx)setTimeout(()=>execFx(step.fx),500);
+document.getElementById('nextBtn').disabled=false;
+if(step.nar)setTimeout(()=>speak(step.nar),600);
+}
+
+/* ===== رسم المكونات 3D ===== */
+function renderComp(id,dz){
+switch(id){
+case'tube':return `<div style="width:95%;height:55%;position:relative;">
+<div style="width:100%;height:100%;background:linear-gradient(180deg,rgba(140,190,240,0.18),rgba(140,190,240,0.06) 30%,rgba(140,190,240,0.06) 70%,rgba(140,190,240,0.18));border:2px solid rgba(120,170,220,0.45);border-radius:40px;box-shadow:inset 0 3px 6px rgba(255,255,255,0.25),inset 0 -2px 4px rgba(0,0,0,0.05),0 4px 16px rgba(0,0,0,0.1);position:relative;overflow:hidden;">
+<div style="position:absolute;top:2px;left:15%;right:15%;height:30%;background:linear-gradient(180deg,rgba(255,255,255,0.15),transparent);border-radius:30px;"></div>
+<div id="tubeAnode" style="position:absolute;right:8px;top:20%;width:12px;height:60%;background:linear-gradient(90deg,#aaa,#888,#777);border-radius:3px;box-shadow:inset -2px 0 3px rgba(0,0,0,0.2),2px 0 4px rgba(0,0,0,0.15);"></div>
+<div id="tubeCathode" style="position:absolute;left:8px;top:20%;width:12px;height:60%;background:linear-gradient(90deg,#777,#888,#aaa);border-radius:3px;box-shadow:inset 2px 0 3px rgba(0,0,0,0.2),-2px 0 4px rgba(0,0,0,0.15);"></div>
+</div>
+<div style="position:absolute;bottom:-14px;left:5%;right:5%;height:14px;background:linear-gradient(180deg,#a08050,#7a5c30,#5c4420);border-radius:3px;box-shadow:0 3px 8px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.1);"></div>
+<div style="position:absolute;top:-16px;right:10%;font-size:.6rem;color:var(--muted);font-weight:600;">المصعد (+)</div>
+<div style="position:absolute;top:-16px;left:10%;font-size:.6rem;color:var(--muted);font-weight:600;">المهبط (-)</div>
+</div>`;
+case'coil':return `<div style="width:80%;height:70%;position:relative;">
+<div style="width:100%;height:100%;background:linear-gradient(90deg,#2a1c04,#5c4418,#8b6914,#a07818,#8b6914,#5c4418,#2a1c04);border-radius:12px;box-shadow:3px 5px 15px rgba(0,0,0,0.3),inset 0 2px 0 rgba(255,255,255,0.12);position:relative;overflow:hidden;">
+<div style="position:absolute;top:6px;left:6px;right:6px;bottom:6px;background:repeating-linear-gradient(180deg,transparent,transparent 4px,rgba(220,180,80,0.25) 4px,rgba(220,180,80,0.25) 5.5px);border-radius:8px;"></div>
+<div style="position:absolute;top:15%;left:50%;transform:translateX(-50%);width:30%;height:70%;background:linear-gradient(90deg,#444,#666,#888,#666,#444);border-radius:4px;box-shadow:inset 0 0 6px rgba(0,0,0,0.3);"></div>
+</div>
+<div id="coilTL" style="position:absolute;top:-8px;left:22%;width:12px;height:12px;background:radial-gradient(circle at 35% 35%,#eee,#777);border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.4);z-index:2;"></div>
+<div id="coilTR" style="position:absolute;top:-8px;right:22%;width:12px;height:12px;background:radial-gradient(circle at 35% 35%,#eee,#777);border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.4);z-index:2;"></div>
+<div style="position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--muted);font-weight:600;white-space:nowrap;">ملف رومكورف</div>
+</div>`;
+case'wire1':case'wire2':return '';
+case'magnet':return `<div style="width:85%;height:75%;display:flex;align-items:flex-end;justify-content:center;">
+<div style="display:flex;width:100%;height:85%;border-radius:6px;overflow:hidden;box-shadow:3px 4px 12px rgba(0,0,0,0.25),inset 0 1px 0 rgba(255,255,255,0.1);">
+<div style="flex:1;background:linear-gradient(135deg,#e53935,#b71c1c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:1rem;text-shadow:0 1px 3px rgba(0,0,0,0.3);">N</div>
+<div style="flex:.9;background:linear-gradient(180deg,#aaa,#888,#777,#888);"></div>
+<div style="flex:1;background:linear-gradient(135deg,#1565c0,#0d47a1);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:1rem;text-shadow:0 1px 3px rgba(0,0,0,0.3);">S</div>
+</div></div>`;
+case'cylinder':return `<div id="cylEl" style="width:50%;height:88%;position:relative;">
+<div style="width:100%;height:100%;background:linear-gradient(90deg,rgba(180,210,240,0.15),rgba(220,240,255,0.3),rgba(180,210,240,0.15));border:2px solid rgba(150,180,210,0.4);border-radius:4px 4px 8px 8px;box-shadow:inset 0 3px 6px rgba(255,255,255,0.25),0 3px 10px rgba(0,0,0,0.1);overflow:hidden;position:relative;">
+<div id="cylFill" style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,rgba(26,107,138,0.45),rgba(26,107,138,0.65));transition:height 1.8s ease;"></div>
+<div style="position:absolute;top:8px;right:3px;font-size:.45rem;color:var(--muted);writing-mode:vertical-rl;letter-spacing:2px;">mL</div>
+${[50,100,150,200,250].map(v=>`<div style="position:absolute;bottom:${v/250*100}%;left:0;width:22%;border-top:1px solid rgba(100,140,170,0.35);"><span style="position:absolute;right:-20px;top:-6px;font-size:.38rem;color:var(--muted);font-weight:600;">${v}</span></div>`).join('')}
+</div>
+<div style="position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-size:.5rem;color:var(--muted);white-space:nowrap;">مخبار مدرج</div>
+</div>`;
+case'solution':return `<div style="width:65%;height:55%;position:relative;">
+<div style="width:100%;height:100%;background:linear-gradient(180deg,rgba(26,107,138,0.55),rgba(26,107,138,0.75));border:2px solid rgba(26,107,138,0.6);border-radius:5px 5px 8px 8px;box-shadow:inset 0 -10px 16px rgba(0,0,0,0.15),0 3px 10px rgba(0,0,0,0.15);">
+<div style="position:absolute;top:15%;left:50%;transform:translateX(-50%);font-size:.65rem;color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.3);">CuCl₂</div>
+<div style="position:absolute;top:0;left:0;right:0;height:25%;background:linear-gradient(180deg,rgba(255,255,255,0.12),transparent);"></div>
+</div>
+<div style="position:absolute;top:-5px;left:4px;right:4px;height:7px;background:linear-gradient(180deg,#666,#444);border-radius:4px 4px 0 0;"></div></div>`;
+case'beaker':return `<div style="width:90%;height:88%;position:relative;">
+<div style="width:100%;height:100%;background:linear-gradient(90deg,rgba(200,220,240,0.12),rgba(230,240,250,0.06),rgba(200,220,240,0.12));border:2px solid rgba(150,180,210,0.35);border-radius:3px 3px 12px 12px;box-shadow:inset 0 3px 8px rgba(255,255,255,0.2),0 4px 14px rgba(0,0,0,0.08);overflow:hidden;position:relative;">
+<div id="bkFill" style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,rgba(26,107,138,0.35),rgba(26,107,138,0.55));transition:height 2.5s ease;"></div>
+<div id="bubCont" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
+<div id="depCont" style="position:absolute;bottom:0;left:0;right:0;pointer-events:none;"></div>
+</div>
+<div style="position:absolute;top:-3px;right:6px;font-size:.5rem;color:var(--muted);">كأس زجاجية</div>
+</div>`;
+case'elec1':return `<div style="width:60%;height:90%;position:relative;">
+<div style="width:100%;height:100%;background:linear-gradient(90deg,#666,#444,#333,#444,#666);border-radius:3px 3px 5px 5px;box-shadow:2px 3px 10px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.1);overflow:hidden;">
+<div id="dep1" style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,var(--copper),#8b5e2f);transition:height 3s ease;border-radius:0 0 5px 5px;"></div>
+</div>
+<div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:.5rem;color:var(--muted);white-space:nowrap;font-weight:600;">المهبط (-)</div>
+</div>`;
+case'elec2':return `<div style="width:60%;height:90%;position:relative;">
+<div style="width:100%;height:100%;background:linear-gradient(90deg,#666,#444,#333,#444,#666);border-radius:3px 3px 5px 5px;box-shadow:2px 3px 10px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.1);overflow:hidden;">
+<div id="gasCont" style="position:absolute;bottom:0;left:-6px;right:-6px;pointer-events:none;"></div>
+</div>
+<div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:.5rem;color:var(--muted);white-space:nowrap;font-weight:600;">المصعد (+)</div>
+</div>`;
+case'battery':return `<div style="width:85%;height:65%;position:relative;">
+<div style="width:100%;height:100%;background:linear-gradient(135deg,#2d8a4e,#1a6b3a,#166534);border-radius:8px;box-shadow:3px 5px 14px rgba(0,0,0,0.25),inset 0 2px 0 rgba(255,255,255,0.15);position:relative;">
+<div id="batNeg" style="position:absolute;top:-5px;left:16%;width:10px;height:5px;background:linear-gradient(180deg,#ddd,#999);border-radius:2px 2px 0 0;box-shadow:0 -1px 2px rgba(0,0,0,0.15);"></div>
+<div id="batPos" style="position:absolute;top:-8px;right:16%;width:14px;height:8px;background:linear-gradient(180deg,#ddd,#999);border-radius:2px 2px 0 0;box-shadow:0 -1px 2px rgba(0,0,0,0.15);"></div>
+<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:.9rem;font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);">6V</div>
+<div style="position:absolute;top:4px;left:16%;font-size:.4rem;color:rgba(255,255,255,0.6);">-</div>
+<div style="position:absolute;top:4px;right:16%;font-size:.5rem;color:rgba(255,255,255,0.6);">+</div>
+</div>
+<div style="position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:.5rem;color:var(--muted);white-space:nowrap;">بطارية</div>
+</div>`;
+default:return '';
+}}
+
+/* ===== حساب مواقع الأقطاب بدقة ===== */
+function getTermPos(){
+const b=document.getElementById('bench');
+const W=b.offsetWidth,H=b.offsetHeight;
+if(S.exp===0){
+  /* أنبوب: l:8% t:18% w:84% h:28% */
+  /* قطب المهبط (أيسر الأنبوب): left:8%+8px من الأنبوب ≈ 8%+2% */
+  /* قطب المصعد (أيمن الأنبوب): right:8% ≈ 92%-2% */
+  const tL=W*.08, tT=H*.18, tW=W*.84, tH=H*.28;
+  const cathodeX=tL+W*.05, cathodeY=tT+tH*.5;
+  const anodeX=tL+tW-W*.05, anodeY=tT+tH*.5;
+  /* ملف: l:30% t:58% w:40% h:22% */
+  /* طرف أيسر: left:22% من الملف */
+  /* طرف أيمن: right:22% من الملف */
+  const cL=W*.30, cT=H*.58, cW=W*.40, cH=H*.22;
+  const coilLeftX=cL+cW*.22, coilLeftY=cT-H*.015;
+  const coilRightX=cL+cW*(1-.22), coilRightY=cT-H*.015;
+  return {cathodeX,cathodeY,anodeX,anodeY,coilLeftX,coilLeftY,coilRightX,coilRightY};
+}else{
+  /* بطارية: l:4% t:26% w:18% h:32% */
+  const bL=W*.04, bT=H*.26, bW=W*.18, bH=H*.32;
+  /* قطب سالب: left:16% من البطارية, فوقها بـ5px */
+  const batNegX=bL+bW*.21, batNegY=bT-H*.01;
+  /* قطب موجب: right:16% من البطارية, فوقها بـ8px */
+  const batPosX=bL+bW*(1-.23), batPosY=bT-H*.015;
+  /* قطب كهربائي 1 (مهبط): l:34% t:22% w:6% */
+  const e1X=W*.34+W*.03, e1Y=H*.22;
+  /* قطب كهربائي 2 (مصعد): l:55% t:22% w:6% */
+  const e2X=W*.55+W*.03, e2Y=H*.22;
+  return {batNegX,batNegY,batPosX,batPosY,e1X,e1Y,e2X,e2Y};
+}
+}
+
+/* ===== رسم الأسلاك SVG ===== */
+function drawWires(){
+const svg=document.getElementById('wiresSvg'),bench=document.getElementById('bench');
+const W=bench.offsetWidth,H=bench.offsetHeight;
+svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML='';
+if(S.exp===0)drawDWires(svg,W,H);else drawEWires(svg,W,H);
+}
+function addW(svg,x1,y1,x2,y2,cx,cy,dl){
+const ns='http://www.w3.org/2000/svg';
+const p=document.createElementNS(ns,'path');
+p.setAttribute('d',`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
+p.setAttribute('class','wire-path wire-anim');if(dl)p.style.animationDelay=dl+'s';
+svg.appendChild(p);
+[[x1,y1],[x2,y2]].forEach(([x,y])=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',5);c.setAttribute('class','wire-dot');svg.appendChild(c);});
+}
+function drawDWires(svg,W,H){
+const p=S.placed[0],hasC=p.includes('coil'),hasW1=p.includes('wire1'),hasW2=p.includes('wire2');
+if(!hasC)return;
+const t=getTermPos();
+if(hasW1){
+  /* سلك من طرف الملف الأيسر إلى المهبط */
+  const cx=(t.coilLeftX+t.cathodeX)*.5, cy=Math.min(t.coilLeftY,t.cathodeY)-H*.06;
+  addW(svg,t.coilLeftX,t.coilLeftY,t.cathodeX,t.cathodeY,cx,cy,.1);
+}
+if(hasW2){
+  /* سلك من طرف الملف الأيمن إلى المصعد */
+  const cx=(t.coilRightX+t.anodeX)*.5, cy=Math.min(t.coilRightY,t.anodeY)-H*.06;
+  addW(svg,t.coilRightX,t.coilRightY,t.anodeX,t.anodeY,cx,cy,.2);
+}
+}
+function drawEWires(svg,W,H){
+const p=S.placed[1],hasB=p.includes('battery'),hasE1=p.includes('elec1'),hasE2=p.includes('elec2');
+if(!hasB)return;
+const t=getTermPos();
+if(hasE1){
+  /* سلك من قطب سالب البطارية إلى المهبط */
+  const cx=(t.batNegX+t.e1X)*.5, cy=Math.min(t.batNegY,t.e1Y)-H*.04;
+  addW(svg,t.batNegX,t.batNegY,t.e1X,t.e1Y,cx,cy,.1);
+}
+if(hasE2){
+  /* سلك من قطب موجب البطارية إلى المصعد */
+  const cx=(t.batPosX+t.e2X)*.5, cy=Math.min(t.batPosY,t.e2Y)-H*.06;
+  addW(svg,t.batPosX,t.batPosY,t.e2X,t.e2Y,cx,cy,.2);
+}
+}
+
+/* ===== تأثيرات الكانفاس ===== */
+function drawFx(){
+const c=document.getElementById('fxCanvas'),b=document.getElementById('bench');
+c.width=b.offsetWidth;c.height=b.offsetHeight;
+const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+if(S.exp===0)drawDFx(ctx,c.width,c.height);
+else drawEFx(ctx,c.width,c.height);
+}
+
+/* ===== تأثيرات تجربة التفريغ - توهج عالي ===== */
+function drawDFx(ctx,W,H){
+if(!S.fx.ray)return;
+const tubeL=W*.08,tubeT=H*.18,tubeW=W*.84,tubeH=H*.28;
+const rayY=tubeT+tubeH*.5;
+
+ctx.save();
+ctx.beginPath();
+ctx.rect(tubeL+tubeW*.05,tubeT+3,tubeW-tubeW*.10,tubeH-6);
+ctx.clip();
+
+/* تدرج لون الشعاع */
+const g=ctx.createLinearGradient(tubeL,rayY,tubeL+tubeW,rayY);
+g.addColorStop(0,'rgba(0,230,118,0)');
+g.addColorStop(0.06,'rgba(0,230,118,0.5)');
+g.addColorStop(0.5,'rgba(0,255,140,0.7)');
+g.addColorStop(0.94,'rgba(0,230,118,0.5)');
+g.addColorStop(1,'rgba(0,230,118,0)');
+ctx.strokeStyle=g;
+ctx.lineCap='round';
+
+if(!S.fx.defl){
+  /* خط مستقيم ساطع */
+  ctx.lineWidth=14;ctx.globalAlpha=1;
+  ctx.beginPath();ctx.moveTo(tubeL+tubeW*.08,rayY);ctx.lineTo(tubeL+tubeW*.92,rayY);ctx.stroke();
+  /* توهج متوسط */
+  ctx.lineWidth=32;ctx.globalAlpha=0.3;
+  ctx.beginPath();ctx.moveTo(tubeL+tubeW*.08,rayY);ctx.lineTo(tubeL+tubeW*.92,rayY);ctx.stroke();
+  /* توهج واسع */
+  ctx.lineWidth=56;ctx.globalAlpha=0.1;
+  ctx.beginPath();ctx.moveTo(tubeL+tubeW*.08,rayY);ctx.lineTo(tubeL+tubeW*.92,rayY);ctx.stroke();
+}else{
+  /* مسار منحني - خط ساطع */
+  ctx.lineWidth=13;ctx.globalAlpha=1;
+  ctx.beginPath();ctx.moveTo(tubeL+tubeW*.08,rayY);
+  ctx.bezierCurveTo(tubeL+tubeW*.35,rayY,tubeL+tubeW*.55,rayY,tubeL+tubeW*.92,rayY+tubeH*.38);
+  ctx.stroke();
+  /* توهج متوسط */
+  ctx.lineWidth=30;ctx.globalAlpha=0.3;
+  ctx.beginPath();ctx.moveTo(tubeL+tubeW*.08,rayY);
+  ctx.bezierCurveTo(tubeL+tubeW*.35,rayY,tubeL+tubeW*.55,rayY,tubeL+tubeW*.92,rayY+tubeH*.38);
+  ctx.stroke();
+  /* توهج واسع */
+  ctx.lineWidth=54;ctx.globalAlpha=0.1;
+  ctx.beginPath();ctx.moveTo(tubeL+tubeW*.08,rayY);
+  ctx.bezierCurveTo(tubeL+tubeW*.35,rayY,tubeL+tubeW*.55,rayY,tubeL+tubeW*.92,rayY+tubeH*.38);
+  ctx.stroke();
+}
+ctx.globalAlpha=1;
+
+/* توهج محيطي ساطع داخل الأنبوب */
+const g2=ctx.createRadialGradient(tubeL+tubeW*.5,rayY,0,tubeL+tubeW*.5,rayY,tubeW*.32);
+g2.addColorStop(0,'rgba(0,230,118,0.12)');
+g2.addColorStop(0.5,'rgba(0,230,118,0.04)');
+g2.addColorStop(1,'rgba(0,230,118,0)');
+ctx.fillStyle=g2;ctx.fillRect(tubeL,tubeT,tubeW,tubeH);
+ctx.restore();
+
+/* توهج المجال المغناطيسي */
+if(S.fx.defl){
+const mx=tubeL+tubeW*.75,my=tubeT+tubeH*.3;
+const mg=ctx.createRadialGradient(mx,my,0,mx,my,50);
+mg.addColorStop(0,'rgba(192,57,43,0.12)');mg.addColorStop(1,'rgba(192,57,43,0)');
+ctx.fillStyle=mg;ctx.beginPath();ctx.arc(mx,my,50,0,Math.PI*2);ctx.fill();
+ctx.strokeStyle='rgba(192,57,43,0.3)';ctx.lineWidth=1;
+for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*25,my+Math.sin(a)*25);ctx.lineTo(mx+Math.cos(a)*42,my+Math.sin(a)*42);ctx.stroke();}
+}
+}
+
+/* ===== تأثيرات التحليل الكهربائي ===== */
+function drawEFx(ctx,W,H){
+if(!S.fx.elec)return;
+ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#b8860b';
+ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+ctx.beginPath();ctx.moveTo(W*.37,H*.20);ctx.quadraticCurveTo(W*.30,H*.18,W*.22,H*.34);ctx.stroke();
+ctx.beginPath();ctx.moveTo(W*.58,H*.20);ctx.quadraticCurveTo(W*.42,H*.14,W*.22,H*.48);ctx.stroke();
+ctx.setLineDash([]);
+ctx.fillStyle=ctx.strokeStyle;ctx.font='bold 11px Cairo';ctx.textAlign='center';
+ctx.fillText('e\u207B',W*.28,H*.17);
+}
+
+/* ===== تنفيذ التأثيرات ===== */
+let elecInt=null;
+function execFx(fx){
+switch(fx){
+case'startRay':S.fx.ray=true;snd('buzz');drawFx();break;
+case'deflectRay':S.fx.defl=true;drawFx();break;
+case'showAtom':showAtomModel();break;
+case'fillCyl':
+S.fx.cylFill=true;
+/* 150 مل من 250 مل = 60% */
+const cf=document.getElementById('cylFill');if(cf)cf.style.height='60%';
+snd('pour');
+/* لا نذكر الحجم هنا */
+break;
+case'pourSol':
+snd('pour');
+/* 150 مل في الكأس = 60% من ارتفاعها */
+const bf=document.getElementById('bkFill');
+if(bf)setTimeout(()=>bf.style.height='60%',400);
+/* تيار سائل مرئي */
+const ps=document.createElement('div');
+ps.style.cssText='position:absolute;left:78%;top:28%;width:3px;height:0;background:linear-gradient(180deg,var(--solution),rgba(26,107,138,0.2));border-radius:2px;z-index:20;pointer-events:none;transition:height .3s ease;';
+document.getElementById('placedLayer').appendChild(ps);
+setTimeout(()=>ps.style.height='80px',100);
+setTimeout(()=>ps.style.height='0',1200);
+setTimeout(()=>ps.remove(),1800);
+/* الصوت يذكر 150 مل بعد اكتمال السكب بصرياً */
+setTimeout(()=>speak('تم سكب 150 ملليلتر من محلول كلوريد النحاس تركيزه 1 مولار في الكأس الزجاجية. لاحظ لونه الأزرق المخضر'),2800);
+break;
+case'startElec':
+S.fx.elec=true;snd('buzz');drawFx();
+const d1=document.getElementById('dep1');if(d1)setTimeout(()=>d1.style.height='35%',800);
+const gc=document.getElementById('gasCont');
+if(gc){elecInt=setInterval(()=>{
+if(!S.fx.elec){clearInterval(elecInt);return;}
+const b=document.createElement('div');b.className='bubble';
+const sz=3+Math.random()*7;
+b.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;bottom:5%;animation-duration:${1.5+Math.random()*1.5}s;`;
+gc.appendChild(b);snd('bubble');setTimeout(()=>b.remove(),3500);
+},500);}
+break;
+case'showElecModel':showElecModel();break;
+}
+}
+
+/* ===== نماذج ذرية ===== */
+function showAtomModel(){
+const el=document.createElement('div');el.className='placed-comp fade-up';
+/* بعيد عن المغناطيس (المغناطيس في الأعلى اليمنى 60-90%) */
+el.style.cssText='left:3%;top:50%;width:30%;height:18%;perspective:500px;';
+el.innerHTML=`<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+<div style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff6b6b,#c0392b);box-shadow:0 0 10px rgba(192,57,43,0.4);position:absolute;z-index:2;"></div>
+<div style="position:absolute;width:70px;height:70px;border:1.5px solid rgba(184,134,11,0.4);border-radius:50%;animation:orbS 3s linear infinite;"></div>
+<div style="position:absolute;width:105px;height:105px;border:1.5px solid rgba(184,134,11,0.3);border-radius:50%;animation:orbS 4s linear infinite reverse;transform:rotateX(55deg);"></div>
+<div style="position:absolute;width:130px;height:130px;border:1.5px solid rgba(184,134,11,0.2);border-radius:50%;animation:orbS 5s linear infinite;transform:rotateX(-55deg) rotateY(25deg);"></div>
+${[0,1,2].map(i=>`<div style="position:absolute;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);z-index:3;animation:eO${i} ${[3,4,5][i]}s linear infinite;"></div>`).join('')}
+</div><div style="position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:.55rem;color:var(--accent);font-weight:700;white-space:nowrap;">نموذج ذرة (إلكترونات حول النواة)</div>
+<style>@keyframes orbS{from{transform:rotateX(55deg) rotateZ(0deg);}to{transform:rotateX(55deg) rotateZ(360deg);}}
+@keyframes eO0{from{transform:rotate(0deg) translateX(35px);}to{transform:rotate(360deg) translateX(35px);}}
+@keyframes eO1{from{transform:rotate(120deg) translateX(52px) rotateX(55deg);}to{transform:rotate(480deg) translateX(52px) rotateX(55deg);}}
+@keyframes eO2{from{transform:rotate(240deg) translateX(65px) rotateX(-55deg) rotateY(25deg);}to{transform:rotate(600deg) translateX(65px) rotateX(-55deg) rotateY(25deg);}}</style>`;
+document.getElementById('placedLayer').appendChild(el);
+}
+function showElecModel(){
+const el=document.createElement('div');el.className='placed-comp fade-up';
+el.style.cssText='left:55%;top:2%;width:40%;height:18%;';
+el.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:4px;">
+<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+<div style="background:linear-gradient(135deg,var(--copper),#8b5e2f);color:#fff;padding:3px 8px;border-radius:6px;font-size:.6rem;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Cu\u00B2\u207A + 2e\u207B \u2192 Cu</div>
+<div style="background:linear-gradient(135deg,var(--gas-c),#558b2f);color:#fff;padding:3px 8px;border-radius:6px;font-size:.6rem;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.15);">2Cl\u207B \u2192 Cl\u2082 + 2e\u207B</div>
+</div>
+<div style="font-size:.5rem;color:var(--muted);line-height:1.5;text-align:center;">الإلكترونات تنتقل من المصعد إلى المهبط عبر السلك الخارجي</div>
+</div>`;
+document.getElementById('placedLayer').appendChild(el);
+}
+
+/* ===== إدارة الخطوات ===== */
+function updateStep(){
+const steps=EXPS[S.exp].steps,step=steps[S.step];
+if(!step){
+document.getElementById('instrTxt').textContent='أحسنت! أكملت جميع خطوات التجربة. سجّل ملاحظاتك واستنتاجاتك ثم تحقق من الإجابات النموذجية.';
+document.getElementById('stepNum').textContent='\u2713';document.getElementById('nextBtn').disabled=true;
+snd('complete');return;
+}
+document.getElementById('stepNum').textContent=S.step+1;
+document.getElementById('instrTxt').textContent=step.hint||(step.tool?'':step.nar||'');
+document.getElementById('nextBtn').disabled=!!step.tool;
+EXPS[S.exp].tools.forEach(t=>{const el=document.getElementById('tool-'+t.id);if(el)el.classList.toggle('used',S.placed[S.exp].includes(t.id));});
+const dh=document.getElementById('dropHints');dh.innerHTML='';
+if(step.tool&&step.dz){
+const dz=document.createElement('div');dz.className='drop-hint';dz.id='activeDrop';
+dz.style.cssText=`left:${step.dz.l};top:${step.dz.t};width:${step.dz.w};height:${step.dz.h};`;
+dz.innerHTML=`<span style="font-size:.7rem;color:var(--muted);text-align:center;padding:8px;">${step.hint}</span>`;
+dh.appendChild(dz);
+}
+if(step.nar&&!step.fx)setTimeout(()=>speak(step.nar),400);
+if(!step.tool&&step.click){
+const tgt=document.getElementById('p-'+step.click);
+if(tgt){tgt.classList.add('clickable');tgt.style.cursor='pointer';
+tgt.onclick=()=>{snd('pour');execFx(step.fx);tgt.classList.remove('clickable');tgt.style.cursor='';tgt.onclick=null;document.getElementById('nextBtn').disabled=false;};}
+}
+if(!step.tool&&!step.click&&step.fx)setTimeout(()=>execFx(step.fx),600);
+}
+
+function nextStep(){
+S.notes[S.exp]=document.getElementById('notesTa').value;
+snd('click');S.step++;updateStep();drawWires();drawFx();
+}
+
+function clearPlaced(){
+if(elecInt)clearInterval(elecInt);
+S.fx={ray:false,defl:false,cylFill:false,bkFill:false,elec:false};
+document.getElementById('placedLayer').innerHTML='';
+document.getElementById('dropHints').innerHTML='';
+document.getElementById('wiresSvg').innerHTML='';
+}
+
+/* ===== التقييم التفاعلي ===== */
+function buildAssessment(){
+const area=document.getElementById('assessArea');
+let html='<div class="assess-title"><i class="fas fa-clipboard-check"></i> التقييم التفاعلي</div>';
+html+=`<div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
+<button class="tab-btn ${S.exp===0?'active':''}" onclick="setAExp(0)" id="aq0">التفريغ الكهربائي</button>
+<button class="tab-btn ${S.exp===1?'active':''}" onclick="setAExp(1)" id="aq1">التحليل الكهربائي</button>
+</div>`;
+const qs=QUESTIONS[S.exp];
+qs.forEach((q,i)=>{
+html+=`<div class="q-card slide-up" id="qc-${i}" style="animation-delay:${i*.12}s">
+<div class="q-text">${i+1}. ${q.t}</div>
+<div class="q-opts">${q.o.map((o,j)=>`<label class="q-opt" id="qo-${i}-${j}" onclick="selO(${i},${j})"><input type="radio" name="aq${i}" value="${j}"> ${o}</label>`).join('')}</div>
+<div class="q-btns">
+<button class="q-btn ck" onclick="chkA(${i})"><i class="fas fa-check-circle"></i> تحقق من الإجابة</button>
+<button class="q-btn sh" onclick="showA(${i})"><i class="fas fa-eye"></i> أظهر الإجابة</button>
+</div>
+<div class="q-fb" id="qf-${i}"></div>
+</div>`;});
+area.innerHTML=html;
+}
+function setAExp(idx){
+S.exp=idx;S.ans={};
+document.getElementById('aq0').classList.toggle('active',idx===0);
+document.getElementById('aq1').classList.toggle('active',idx===1);
+buildAssessment();snd('click');
+}
+function selO(qi,oi){
+snd('click');S.ans[qi]=oi;
+QUESTIONS[S.exp][qi].o.forEach((_,j)=>document.getElementById(`qo-${qi}-${j}`).classList.toggle('sel',j===oi));
+}
+function chkA(qi){
+const q=QUESTIONS[S.exp][qi],card=document.getElementById(`qc-${qi}`),fb=document.getElementById(`qf-${qi}`);
+if(S.ans[qi]===undefined){fb.className='q-fb show no';fb.innerHTML='<i class="fas fa-exclamation-circle"></i> يرجى اختيار إجابة أولاً.';snd('wrong');return;}
+if(S.ans[qi]===q.c){card.className='q-card correct';fb.className='q-fb show ok';fb.innerHTML='<i class="fas fa-check-circle"></i> إجابة صحيحة! '+q.e;snd('correct');}
+else{card.className='q-card wrong';fb.className='q-fb show no';fb.innerHTML='<i class="fas fa-times-circle"></i> إجابة خاطئة. '+q.e;snd('wrong');}
+}
+function showA(qi){
+const q=QUESTIONS[S.exp][qi],card=document.getElementById(`qc-${qi}`),fb=document.getElementById(`qf-${qi}`);
+q.o.forEach((_,j)=>{const opt=document.getElementById(`qo-${qi}-${j}`);if(j===q.c){opt.style.borderColor='var(--success)';opt.style.background='color-mix(in srgb,var(--success) 8%,transparent)';}});
+card.className='q-card correct';fb.className='q-fb show ok';
+fb.innerHTML='<i class="fas fa-lightbulb"></i> الإجابة الصحيحة: '+q.o[q.c]+'. '+q.e;snd('click');
+}
+
+/* ===== التهيئة ===== */
+window.addEventListener('load',()=>{switchTab(0);});
+window.addEventListener('resize',()=>{drawWires();drawFx();});
+</script>
+</body>
+</html>
